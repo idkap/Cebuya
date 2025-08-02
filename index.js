@@ -135,7 +135,7 @@ client.on('messageCreate', async (message) => {
     const embed = new EmbedBuilder()
       .setTitle("🧱 Wall of Shame Leaderboard")
       .setColor(0xff0000)
-      .setDescription("The biggest clowns of the server 😔");
+      .setDescription("Mga mababaho in CebuyaS 😔");
 
     for (const [userId, score] of sorted) {
       const user = await client.users.fetch(userId).catch(() => null);
