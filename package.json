@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  "scripts": {
+  "postinstall": "apt-get update && apt-get install -y ffmpeg"
   },
   "keywords": [],
   "author": "",
