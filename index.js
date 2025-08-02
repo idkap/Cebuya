@@ -1,97 +1,97 @@
-// Required libraries
 const { Client, GatewayIntentBits } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
+const {
+  joinVoiceChannel,
+  createAudioPlayer,
+  createAudioResource,
+  AudioPlayerStatus
+} = require('@discordjs/voice');
 const ytdl = require('ytdl-core');
-const opusscript = require('opusscript'); // Opus codec for voice support
 
-// Create the client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates, // Needed for voice channels
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
-// Bot token
-const TOKEN = process.env.TOKEN;
-const PREFIX = 'oten!'; // Custom prefix for your commands
-let audioPlayer = null; // To manage the current audio playback
+const PREFIX = 'oten!';
+const TOKEN = process.env.TOKEN; // Use Railway environment variable
 
-// When the bot is ready
+let audioPlayer = null;
+
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// Message handler
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // Auto-response to "oten"
+  // BELATTTT! for messages containing "oten"
   if (message.content.toLowerCase().includes('oten')) {
     message.channel.send('BELATTTT!');
   }
 
-  // oten!play command
+  // oten!play [URL]
   if (message.content.startsWith(`${PREFIX}play`)) {
     const args = message.content.split(' ');
     const song = args.slice(1).join(' ');
 
     if (!song) {
-      message.channel.send('Please provide a song name or URL.');
+      message.channel.send('❗ Please provide a YouTube URL.');
       return;
     }
 
-    // Debug: check if user is in voice channel
-    console.log(`User ${message.author.tag} is in voice channel: ${message.member.voice.channel ? 'Yes' : 'No'}`);
+    const voiceChannel = message.member.voice.channel;
+    if (!voiceChannel) {
+      message.channel.send('❌ You need to join a voice channel first!');
+      return;
+    }
 
-    // Join the user's voice channel
-    if (message.member.voice.channel) {
+    try {
       const connection = joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
+        channelId: voiceChannel.id,
         guildId: message.guild.id,
         adapterCreator: message.guild.voiceAdapterCreator,
       });
 
-      playSong(message, song, connection);
-    } else {
-      message.channel.send('You need to join a voice channel first!');
+      const stream = ytdl(song, {
+        filter: 'audioonly',
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25,
+      });
+
+      const resource = createAudioResource(stream);
+      audioPlayer = createAudioPlayer();
+      audioPlayer.play(resource);
+      connection.subscribe(audioPlayer);
+
+      message.channel.send(`🎶 Now playing: ${song}`);
+
+      audioPlayer.on(AudioPlayerStatus.Idle, () => {
+        connection.destroy();
+      });
+
+      audioPlayer.on('error', (error) => {
+        console.error('AudioPlayer Error:', error);
+        message.channel.send('❌ Error during playback.');
+      });
+    } catch (error) {
+      console.error('Error in play command:', error);
+      message.channel.send('❌ Could not play the song. Make sure the URL is valid.');
     }
   }
 
-  // oten!skip command
+  // oten!skip
   if (message.content.startsWith(`${PREFIX}skip`)) {
     if (audioPlayer) {
       audioPlayer.stop();
-      message.channel.send('⏭ Skipped the song!');
+      message.channel.send('⏭️ Skipped the song!');
     } else {
-      message.channel.send('No song is currently playing.');
+      message.channel.send('❌ No song is currently playing.');
     }
   }
 });
 
-// Function to play the song
-async function playSong(message, song, connection) {
-  try {
-    const stream = ytdl(song, { filter: 'audioonly', quality: 'highestaudio' });
-
-    const resource = createAudioResource(stream);
-    audioPlayer = createAudioPlayer();
-    audioPlayer.play(resource);
-
-    audioPlayer.on(AudioPlayerStatus.Idle, () => {
-      console.log('🔇 Song finished.');
-      connection.destroy();
-    });
-
-    connection.subscribe(audioPlayer);
-    message.channel.send(`🎶 Now playing: ${song}`);
-  } catch (error) {
-    console.error('Error while playing song:', error);
-    message.channel.send('❌ Could not play the song. Make sure the URL is valid.');
-  }
-}
-
-// Start the bot
 client.login(TOKEN);
