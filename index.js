@@ -7,6 +7,7 @@ const {
 } = require('@discordjs/voice');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
+const schedule = require('node-schedule'); // <== Added here
 
 const client = new Client({
   intents: [
@@ -19,14 +20,15 @@ const client = new Client({
 
 const PREFIX = 'oten!';
 const TOKEN = process.env.TOKEN;
+const REMINDER_CHANNEL_ID = '1371269267311296584'; // 🔁 Replace with actual channel ID
 
-// =============== 🎶 MUSIC ================
 let audioPlayer = null;
 
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
+// =============== 💬 MESSAGE EVENTS ================
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
@@ -91,7 +93,6 @@ client.on('messageCreate', async (message) => {
   }
 
   // =============== 🧱 WALL OF SHAME ================
-
   if (message.content.startsWith(`${PREFIX}wos`)) {
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
@@ -129,7 +130,7 @@ client.on('messageCreate', async (message) => {
 
     // oten!wos — show leaderboard
     const sorted = Object.entries(wosData)
-      .sort((a, b) => b[1] - a[1]) // highest shame first
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
 
     const embed = new EmbedBuilder()
@@ -144,6 +145,33 @@ client.on('messageCreate', async (message) => {
     }
 
     return message.channel.send({ embeds: [embed] });
+  }
+});
+
+// =============== ⏰ HOURLY REMINDER (GMT+8) ================
+schedule.scheduleJob('* * * * *', async () => {
+  const now = new Date();
+  const gmt8 = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+  const hour = gmt8.getHours();
+  const minute = gmt8.getMinutes();
+
+  if (minute === 0) {
+    const hourText = `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? 'AM' : 'PM'} NA MY DUDES!`;
+
+    const embed = new EmbedBuilder()
+      .setTitle(hourText)
+      .setColor(0x00aeff)
+      .setFooter({ text: `GMT+8 Time Reminder` })
+      .setTimestamp();
+
+    try {
+      const channel = await client.channels.fetch(REMINDER_CHANNEL_ID);
+      if (channel) {
+        channel.send({ embeds: [embed] });
+      }
+    } catch (err) {
+      console.error('Error sending time reminder:', err);
+    }
   }
 });
 
