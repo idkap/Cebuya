@@ -236,7 +236,6 @@ schedule.scheduleJob('* * * * *', async () => {
 
   if (minute === 0 && reminderState.enabled) {
     const hourText = `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? 'AM' : 'PM'} NA MY DUDES! <@&1388490454189740032>`;
-
     const embed = new EmbedBuilder().setTitle(hourText);
 
     try {
