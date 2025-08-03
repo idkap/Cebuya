@@ -16,6 +16,7 @@
     "@types/node": "^22.13.11",
     "discord.js": "^14.21.0",
     "opusscript": "^0.0.8",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "^4.11.5",
+    "node-schedule": "^2.1.1"
   }
 }
